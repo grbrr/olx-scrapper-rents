@@ -1,0 +1,27 @@
+{
+  "name": "olxrentscrapper",
+  "version": "1.0.0",
+  "description": "Repo for scrapping real estates ads",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grbrr/olxRentScrapper.git"
+  },
+  "author": "grbrr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/grbrr/olxRentScrapper/issues"
+  },
+  "homepage": "https://github.com/grbrr/olxRentScrapper#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  }
+}
