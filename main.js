@@ -7,8 +7,14 @@ const getProperPath = data => {
     return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
 };
 
+const buildURL = () => {
+    if (settings.priceFrom < 1) settings.priceFrom = 1;
+    if (settings.priceTo < settings.priceFrom) settings.priceTo = settings.priceFrom * 2;
+    return `https://www.olx.pl/d/nieruchomosci/mieszkania/?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}`
+}
+console.log(buildURL())
 const request = async () => {
-    const url = settings.urlBase;
+    const url = buildURL();
     try {
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
@@ -48,11 +54,13 @@ const request = async () => {
         let costArr = $(getProperPath(settings.costSelector)).contents().map(function () {
             if (this.type === 'text') return $(this).text();
         }).get();
-
+        
         for (let i = 0; i < costArr.length; i++) {
             costArr[i] = parseInt(costArr[i].replace(/ /g, ''));
         };
         //console.log(costArr);
+
+        console.log(titleArr.length, addressArr.length, dateArr.length, sizeArr.length, costArr.length);
 
         let resultArr = [];
         for (let i = 0; i < titleArr.length; i++) {
@@ -65,7 +73,7 @@ const request = async () => {
                 date: dateArr[i]
             };
         };
-        await console.log(resultArr);
+        //console.log(resultArr);
         return resultArr;
     } catch (e) {
         console.error(`Error in otodom: ${e.message}`);
