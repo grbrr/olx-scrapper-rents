@@ -7,10 +7,18 @@ const getProperPath = data => {
     return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
 };
 
+const deletePolishSigns = string => {
+    const chars = { 'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z' };
+    return string.toLowerCase().replace(/[ąćęłóśźż]/g, m => chars[m]);
+};
+
+
 const buildURL = () => {
     if (settings.priceFrom < 1) settings.priceFrom = 1;
     if (settings.priceTo < settings.priceFrom) settings.priceTo = settings.priceFrom * 2;
-    return `https://www.olx.pl/d/nieruchomosci/mieszkania/?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}`
+    if (settings.location !== '') settings.location = deletePolishSigns(settings.location) + '/';
+    return `https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}`
+    //https://www.olx.pl/d/nieruchomosci/mieszkania/?search%5Bfilter_float_price:from%5D=1000&search%5Bfilter_float_price:to%5D=2500
 }
 console.log(buildURL())
 const request = async () => {
@@ -54,7 +62,7 @@ const request = async () => {
         let costArr = $(getProperPath(settings.costSelector)).contents().map(function () {
             if (this.type === 'text') return $(this).text();
         }).get();
-        
+
         for (let i = 0; i < costArr.length; i++) {
             costArr[i] = parseInt(costArr[i].replace(/ /g, ''));
         };
