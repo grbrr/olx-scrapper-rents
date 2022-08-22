@@ -2,10 +2,11 @@
 Repo for scrapping real estates ads.
 REPO UNDER CONSTRUCTION
 
-## Installation
-Clone files to your machine and run npm i in shell.
+## Installation and launch
+Runs in node.js. Clone files to your machine and run commands in shell.
 ```
 npm i
+npm start
 ```
 ## Features
 Console log array of data in JSON format from first page of search (you don't really want to search next pages anyway if you made proper filters). One position in array - one advertisement.
