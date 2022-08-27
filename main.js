@@ -17,7 +17,7 @@ const buildURL = () => {
     if (settings.priceFrom < 1) settings.priceFrom = 1;
     if (settings.priceTo < settings.priceFrom) settings.priceTo = settings.priceFrom * 2;
     if (settings.location !== '') settings.location = deletePolishSigns(settings.location) + '/';
-    return `https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}&search%5Bfilter_float_m:from%5D=${settings.areaFrom}&search%5Bfilter_float_m:to%5D=${settings.areaTo}`
+    return `https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}&search%5Bfilter_float_m:from%5D=${settings.sizeFrom}&search%5Bfilter_float_m:to%5D=${settings.sizeTo}`
     //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_float_price:from%5D=1000&search%5Bfilter_float_price:to%5D=2500&search%5Bfilter_float_m:from%5D=25&search%5Bfilter_float_m:to%5D=40
 }
 console.log(buildURL())
