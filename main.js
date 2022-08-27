@@ -46,6 +46,7 @@ const addEnumFilter = (url, settingsProperty) => {
 
 const buildURL = () => {
     let url = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
+    if (settings.category) url = addPrefixFilter(url, settings.category);
     if (settings.location) url = addPrefixFilter(url, settings.location);
     if (settings.priceFrom) url = addNumberFilter(url, settings.priceFrom);
     if (settings.priceTo) url = addNumberFilter(url, settings.priceTo);
