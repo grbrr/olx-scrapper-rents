@@ -12,17 +12,49 @@ const deletePolishSigns = string => {
     return string.toLowerCase().replace(/[ąćęłóśźż]/g, m => chars[m]);
 };
 
+const fromNumToString = number => {
+    switch (number) {
+        case 1:
+            return 'one';
+        case 2:
+            return 'two';
+        case 3:
+            return 'three';
+        case 4:
+            return 'four';
+        default:
+            break;
+    };
+};
+
+const addPrefixFilter = (url, settingsProperty) => {
+    return url + deletePolishSigns(settingsProperty) + '/';
+};
+
+const addNumberFilter = (url, settingsProperty) => {
+    return url + `?search%5Bfilter_float_price:from%5D=${settingsProperty}`;
+};
+
+const addEnumFilter = (url, settingsProperty) => {
+    let checkboxIterator = 0;
+    settingsProperty.forEach(element => {
+        url += `?search%5Bfilter_enum_rooms%5D%5B${checkboxIterator}%5D=${fromNumToString(element)}`;
+        checkboxIterator++;
+    });
+    return url;
+};
 
 const buildURL = () => {
-    let urlBase = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
-    if (settings.location) urlBase += deletePolishSigns(settings.location) + '/';
-    if (settings.priceFrom) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.priceFrom}`;
-    if (settings.priceTo) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.priceTo}`;
-    if (settings.sizeFrom) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.sizeFrom}`;
-    if (settings.sizeTo) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.sizeTo}`;
-    return urlBase//`https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}&search%5Bfilter_float_m:from%5D=${settings.sizeFrom}&search%5Bfilter_float_m:to%5D=${settings.sizeTo}`
-    //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_float_price:from%5D=1000&search%5Bfilter_float_price:to%5D=2500&search%5Bfilter_float_m:from%5D=25&search%5Bfilter_float_m:to%5D=40
-}
+    let url = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
+    if (settings.location) url = addPrefixFilter(url, settings.location);
+    if (settings.priceFrom) url = addNumberFilter(url, settings.priceFrom);
+    if (settings.priceTo) url = addNumberFilter(url, settings.priceTo);
+    if (settings.sizeFrom) url = addNumberFilter(url, settings.sizeFrom);
+    if (settings.sizeTo) url = addNumberFilter(url, settings.sizeTo);
+    if (settings.rooms) url = addEnumFilter(url, settings.rooms)
+    return url;
+    //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_enum_rooms%5D%5B0%5D=one&search%5Bfilter_enum_rooms%5D%5B1%5D=two&search%5Bfilter_enum_rooms%5D%5B2%5D=four
+};
 console.log(buildURL())
 const request = async () => {
     const url = buildURL();
