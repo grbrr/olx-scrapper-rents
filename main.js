@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const settings = require('./settings.json');
+const settings = require('./settings.js');
 
 const getProperPath = data => {
     return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
@@ -14,10 +14,13 @@ const deletePolishSigns = string => {
 
 
 const buildURL = () => {
-    if (settings.priceFrom < 1) settings.priceFrom = 1;
-    if (settings.priceTo < settings.priceFrom) settings.priceTo = settings.priceFrom * 2;
-    if (settings.location !== '') settings.location = deletePolishSigns(settings.location) + '/';
-    return `https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}&search%5Bfilter_float_m:from%5D=${settings.sizeFrom}&search%5Bfilter_float_m:to%5D=${settings.sizeTo}`
+    let urlBase = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
+    if (settings.location) urlBase += deletePolishSigns(settings.location) + '/';
+    if (settings.priceFrom) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.priceFrom}`;
+    if (settings.priceTo) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.priceTo}`;
+    if (settings.sizeFrom) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.sizeFrom}`;
+    if (settings.sizeTo) urlBase += `?search%5Bfilter_float_price:from%5D=${settings.sizeTo}`;
+    return urlBase//`https://www.olx.pl/d/nieruchomosci/mieszkania/${settings.location}?search%5Bfilter_float_price:from%5D=${settings.priceFrom}&search%5Bfilter_float_price:to%5D=${settings.priceTo}&search%5Bfilter_float_m:from%5D=${settings.sizeFrom}&search%5Bfilter_float_m:to%5D=${settings.sizeTo}`
     //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_float_price:from%5D=1000&search%5Bfilter_float_price:to%5D=2500&search%5Bfilter_float_m:from%5D=25&search%5Bfilter_float_m:to%5D=40
 }
 console.log(buildURL())
