@@ -7,6 +7,6 @@ const settings = {
     sizeSelector: 'div.css-odp1qd > div > span',
     costSelector: 'div.css-u2ayx9 > p',
     hyperlinkSelector: 'div.css-u2ayx9 > a',
-    promotedSelector: 'div.css-u2ayx9 > p'
+    promotedSelector: 'div.css-13aawz3 > div > div > div'
 };
 module.exports = settings;

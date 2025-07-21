@@ -1,12 +1,7 @@
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 const settings = require('./settings.js');
-
-const getProperPath = data => {
-    return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
-};
-
-const puppeteer = require('puppeteer');
 
 const request = async () => {
     try {
@@ -18,9 +13,15 @@ const request = async () => {
 
         const $ = cheerio.load(content);
 
+        const offers = $(settings.offers);
         let resultArr = [];
 
-        $(settings.offers).each((i, elem) => {
+        offers.each((i, elem) => {
+            //skip if promoted
+            if ($(elem).find(settings.promotedSelector).length > 0) {
+                return;
+            }
+
             const title = $(elem).find(settings.titleSelector).text().trim();
             const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim();
             let address = '', date = '';
@@ -28,10 +29,13 @@ const request = async () => {
                 [address, date] = addressAndDate.split(' - ').map(s => s.trim());
                 date = date.replace(/Odświeżono( dnia)?/i, '').trim();
             }
-            const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, '')) || null;
-            const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, '')) || null;
+            const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, ''), 10) || null;
+            const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, ''), 10) || null;
             let link = $(elem).find(settings.hyperlinkSelector).attr('href');
-            if (link && link.startsWith('/')) link = 'https://www.olx.pl' + link;
+            if (link && link.startsWith('/')) {
+                const baseUrl = new URL(settings.url).origin;
+                link = baseUrl + link;
+            }
 
             resultArr.push({
                 title,
@@ -59,11 +63,11 @@ const request = async () => {
     };
 }
 
-console.log('starting script...');
-request();
-setInterval(() => {
-    console.log('restarting script...');
-    request();
-}, settings.interval * 1000);
 console.log(`Script will run every ${settings.interval} seconds.`);
 console.log('To stop the script, press Ctrl+C.');
+
+request();
+setInterval(() => {
+    console.log('Restarting script...');
+    request();
+}, settings.interval * 1000);
