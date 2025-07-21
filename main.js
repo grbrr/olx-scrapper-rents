@@ -22,7 +22,11 @@ let page;
 const request = async () => {
     try {
         if (!browser) {
-            browser = await puppeteer.launch({ headless: true });
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                executablePath: '/usr/bin/chromium'
+            });
             page = await browser.newPage();
         }
         await page.goto(settings.url, { waitUntil: 'networkidle2' });
