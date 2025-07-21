@@ -23,6 +23,19 @@ npm i
 npm start
 ```
 
+If you want to run it on aarch 64 also run:
+
+```shell
+apt install chromium
+```
+
+And in .env file add:
+
+```env
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+```
+
 ## Features
 
 - Scraps ads from OLX (from **today** only)
