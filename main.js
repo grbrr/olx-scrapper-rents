@@ -22,15 +22,19 @@ const request = async () => {
                 return;
             }
 
-            const title = $(elem).find(settings.titleSelector).text().trim();
-            const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim();
+            const title = $(elem).find(settings.titleSelector).text().trim() || null;
+
+            const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim() || null;
             let address = '', date = '';
             if (addressAndDate.includes(' - ')) {
                 [address, date] = addressAndDate.split(' - ').map(s => s.trim());
                 date = date.replace(/Odświeżono( dnia)?/i, '').trim();
             }
+
             const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, ''), 10) || null;
+
             const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, ''), 10) || null;
+            
             let link = $(elem).find(settings.hyperlinkSelector).attr('href');
             if (link && link.startsWith('/')) {
                 const baseUrl = new URL(settings.url).origin;
