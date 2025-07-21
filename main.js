@@ -21,14 +21,8 @@ let page;
  */
 const request = async () => {
     try {
-        if (!browser) {
-            browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                executablePath: '/usr/bin/chromium'
-            });
-            page = await browser.newPage();
-        }
+        browser = await puppeteer.launch({ headless: true });
+        page = await browser.newPage();
         await page.goto(settings.url, { waitUntil: 'networkidle2' });
 
         const content = await page.content();
@@ -96,7 +90,7 @@ const request = async () => {
             if (ad.link) seenLinks.add(ad.link);
         });
 
-        // Do not close the browser here to allow reuse
+        await browser.close();
     } catch (e) {
         console.error(`Error in OLX scraper: ${e.message}`);
     }
@@ -123,17 +117,5 @@ async function scheduleNextRequest() {
 console.log('Script will run at random intervals as determined by settings.getRandomInterval().');
 console.log('To stop the script, press Ctrl+C.');
 
-
-(async () => {
-    browser = await puppeteer.launch({ headless: true });
-    page = await browser.newPage();
-    request();
-    scheduleNextRequest();
-})();
-
-process.on('SIGINT', async () => {
-    if (browser) {
-        await browser.close();
-    }
-    process.exit();
-});
+request();
+scheduleNextRequest();
