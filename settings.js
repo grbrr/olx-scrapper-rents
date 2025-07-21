@@ -16,7 +16,7 @@
  */
 const settings = {
     url: 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/wroclaw/?search%5Border%5D=created_at:desc&search%5Bfilter_float_price:to%5D=2500&search%5Bfilter_float_m:to%5D=50',
-    interval: 60, // interval in seconds (getRandomInterval returns milliseconds)
+    interval: 300, // interval in seconds (getRandomInterval returns milliseconds)
     offers: '.css-1g5933j', // advertisement container selector
     titleSelector: '.css-1g61gc2',
     addressAndDateSelector: 'div.css-odp1qd > p',
