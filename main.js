@@ -3,6 +3,8 @@ const puppeteer = require('puppeteer');
 
 const settings = require('./settings.js');
 
+let seenLinks = new Set();
+
 const request = async () => {
     try {
         const browser = await puppeteer.launch({ headless: true });
@@ -51,15 +53,19 @@ const request = async () => {
             });
         });
 
-        resultArr.sort((a, b) => {
-            const isTodayA = a.date.startsWith('Dzisiaj o ');
-            const isTodayB = b.date.startsWith('Dzisiaj o ');
-            if (isTodayA && !isTodayB) return -1;
-            if (!isTodayA && isTodayB) return 1;
-            // Reverse alphabetic order for the rest
-            return b.date.localeCompare(a.date, 'pl');
+        // Filtruj tylko nowe ogłoszenia
+        const newAdverts = resultArr.filter(ad => ad.link && !seenLinks.has(ad.link));
+
+        if (newAdverts.length > 0) {
+            console.log('Nowe ogłoszenia:', newAdverts);
+        } else {
+            console.log('Brak nowych ogłoszeń.');
+        }
+
+        // Zapamiętaj wszystkie linki z obecnego pobrania
+        resultArr.forEach(ad => {
+            if (ad.link) seenLinks.add(ad.link);
         });
-        console.log(resultArr);
 
         await browser.close();
     } catch (e) {
