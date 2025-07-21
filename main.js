@@ -18,65 +18,31 @@ const request = async () => {
 
         const $ = cheerio.load(content);
 
-        let titleArr = $(getProperPath(settings.titleSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-        //console.log(titleArr);
-
-        let addressAndDateArr = $(getProperPath(settings.addressAndDateSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text().trim();
-        }).get();
-
-        let addressArr = [], dateArr = [];
-        addressAndDateArr.forEach(item => {
-            const [address, date] = item.split(' - ').map(part => part.trim());
-            addressArr.push(address);
-            dateArr.push(date.replace(/Odświeżono( dnia)?/i, '').trim()); // removes unnecessary text
-        });
-        //console.log(addressArr);
-        //console.log(dateArr);
-
-
-        let sizeArr = $(getProperPath(settings.sizeSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-
-        for (let i = 0; i < sizeArr.length; i++) {
-            sizeArr[i] = parseInt(sizeArr[i].replace(/ /g, ''));
-        };
-        //console.log(sizeArr);
-
-        let costArr = $(getProperPath(settings.costSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-
-        for (let i = 0; i < costArr.length; i++) {
-            costArr[i] = parseInt(costArr[i].replace(/ /g, ''));
-        };
-        //console.log(costArr);    
-
-        //console.log(titleArr.length, addressArr.length, dateArr.length, sizeArr.length, costArr.length);
         let resultArr = [];
-        for (let i = 0; i < titleArr.length; i++) {
-            // Pobierz link do ogłoszenia
-            let link = null;
-            const linkElem = $(getProperPath(settings.hyperlinkSelector)).eq(i);
-            if (linkElem.length) {
-                link = linkElem.attr('href');
-                if (link && link.startsWith('/')) {
-                    link = 'https://www.olx.pl' + link;
-                }
+
+        $(settings.offers).each((i, elem) => {
+            const title = $(elem).find(settings.titleSelector).text().trim();
+            const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim();
+            let address = '', date = '';
+            if (addressAndDate.includes(' - ')) {
+                [address, date] = addressAndDate.split(' - ').map(s => s.trim());
+                date = date.replace(/Odświeżono( dnia)?/i, '').trim();
             }
-            resultArr[i] = {
-                //number: i + 1,
-                title: titleArr[i],
-                address: addressArr[i],
-                cost: costArr[i],
-                size: sizeArr[i],
-                date: dateArr[i],
-                link: link
-            };
-        };
+            const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, '')) || null;
+            const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, '')) || null;
+            let link = $(elem).find(settings.hyperlinkSelector).attr('href');
+            if (link && link.startsWith('/')) link = 'https://www.olx.pl' + link;
+
+            resultArr.push({
+                title,
+                address,
+                cost,
+                size,
+                date,
+                link
+            });
+        });
+
         resultArr.sort((a, b) => {
             const isTodayA = a.date.startsWith('Dzisiaj o ');
             const isTodayB = b.date.startsWith('Dzisiaj o ');
@@ -86,7 +52,6 @@ const request = async () => {
             return b.date.localeCompare(a.date, 'pl');
         });
         console.log(resultArr);
-
 
         await browser.close();
     } catch (e) {
