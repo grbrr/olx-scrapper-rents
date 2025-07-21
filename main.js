@@ -26,6 +26,7 @@ async function sendEmail(newAdverts) {
             Cena: ${ad.cost} zł, Metraż: ${ad.size} m²<br>
             Godzina: ${ad.date}<br>
             <a href="${ad.link}">${ad.link}</a>
+            ${ad.promoted ? '<span style="color: red;">(Promowane)</span>' : ''}
         </div>
         <hr>
     `).join('');
@@ -52,10 +53,8 @@ const request = async () => {
         let resultArr = [];
 
         offers.each((i, elem) => {
-            //skip if promoted
-            if ($(elem).find(settings.promotedSelector).length > 0) {
-                return;
-            }
+            //mark if promoted
+            const isPromoted = $(elem).find(settings.promotedSelector).length > 0;            
 
             const title = $(elem).find(settings.titleSelector).text().trim() || null;
 
@@ -92,7 +91,8 @@ const request = async () => {
                 cost,
                 size,
                 date,
-                link
+                link,
+                promoted: isPromoted
             });
         });
 
