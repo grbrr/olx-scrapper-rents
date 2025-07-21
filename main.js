@@ -1,4 +1,3 @@
-const axios = require('axios');
 const cheerio = require('cheerio');
 
 const settings = require('./settings.js');
@@ -7,61 +6,17 @@ const getProperPath = data => {
     return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
 };
 
-const deletePolishSigns = string => {
-    const chars = { 'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z' };
-    return string.toLowerCase().replace(/[ąćęłóśźż]/g, m => chars[m]);
-};
+const puppeteer = require('puppeteer');
 
-const fromNumToString = number => {
-    switch (number) {
-        case 1:
-            return 'one';
-        case 2:
-            return 'two';
-        case 3:
-            return 'three';
-        case 4:
-            return 'four';
-        default:
-            break;
-    };
-};
-
-const addPrefixFilter = (url, settingsProperty) => {
-    return url + deletePolishSigns(settingsProperty) + '/';
-};
-
-const addNumberFilter = (url, settingsProperty) => {
-    return url + `?search%5Bfilter_float_price:from%5D=${settingsProperty}`;
-};
-
-const addEnumFilter = (url, settingsProperty) => {
-    let checkboxIterator = 0;
-    settingsProperty.forEach(element => {
-        url += `?search%5Bfilter_enum_rooms%5D%5B${checkboxIterator}%5D=${fromNumToString(element)}`;
-        checkboxIterator++;
-    });
-    return url;
-};
-
-const buildURL = () => {
-    let url = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
-    if (settings.category) url = addPrefixFilter(url, settings.category);
-    if (settings.location) url = addPrefixFilter(url, settings.location);
-    if (settings.priceFrom) url = addNumberFilter(url, settings.priceFrom);
-    if (settings.priceTo) url = addNumberFilter(url, settings.priceTo);
-    if (settings.sizeFrom) url = addNumberFilter(url, settings.sizeFrom);
-    if (settings.sizeTo) url = addNumberFilter(url, settings.sizeTo);
-    if (settings.rooms) url = addEnumFilter(url, settings.rooms)
-    return url;
-    //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_enum_rooms%5D%5B0%5D=one&search%5Bfilter_enum_rooms%5D%5B1%5D=two&search%5Bfilter_enum_rooms%5D%5B2%5D=four
-};
-console.log(buildURL())
 const request = async () => {
-    const url = buildURL();
     try {
-        const response = await axios.get(url);
-        const $ = cheerio.load(response.data);
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.goto(settings.url, { waitUntil: 'networkidle2' });
+
+        const content = await page.content();
+
+        const $ = cheerio.load(content);
 
         let titleArr = $(getProperPath(settings.titleSelector)).contents().map(function () {
             if (this.type === 'text') return $(this).text();
@@ -69,22 +24,18 @@ const request = async () => {
         //console.log(titleArr);
 
         let addressAndDateArr = $(getProperPath(settings.addressAndDateSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
+            if (this.type === 'text') return $(this).text().trim();
         }).get();
 
         let addressArr = [], dateArr = [];
-
-        for (let i = 0, j = 0, k = 0; i < addressAndDateArr.length; i++) {
-            if (i % 3 === 0) {
-                addressArr[j] = addressAndDateArr[i];
-                j++;
-            } else if (i % 3 === 2) {
-                dateArr[k] = addressAndDateArr[i];
-                k++;
-            };
-        };
+        addressAndDateArr.forEach(item => {
+            const [address, date] = item.split(' - ').map(part => part.trim());
+            addressArr.push(address);
+            dateArr.push(date.replace(/Odświeżono( dnia)?/i, '').trim()); // removes unnecessary text
+        });
         //console.log(addressArr);
         //console.log(dateArr);
+
 
         let sizeArr = $(getProperPath(settings.sizeSelector)).contents().map(function () {
             if (this.type === 'text') return $(this).text();
@@ -105,7 +56,6 @@ const request = async () => {
         //console.log(costArr);
 
         console.log(titleArr.length, addressArr.length, dateArr.length, sizeArr.length, costArr.length);
-
         let resultArr = [];
         for (let i = 0; i < titleArr.length; i++) {
             resultArr[i] = {
@@ -117,12 +67,13 @@ const request = async () => {
                 date: dateArr[i]
             };
         };
-        //console.log(resultArr);
-        return resultArr;
+        console.log(resultArr);
+
+
+        await browser.close();
     } catch (e) {
         console.error(`Error in otodom: ${e.message}`);
     };
-};
-
+}
 console.log('starting script...');
 request();
