@@ -1,9 +1,42 @@
+require('dotenv').config();
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
+const nodemailer = require('nodemailer');
 
 const settings = require('./settings.js');
 
 let seenLinks = new Set();
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.OLX_EMAIL,
+        pass: process.env.OLX_EMAIL_PASS
+    }
+});
+
+// Funkcja do wysyłania maila
+async function sendEmail(newAdverts) {
+    if (!newAdverts.length) return;
+
+    const html = newAdverts.map(ad => `
+        <div>
+            <b>${ad.title}</b><br>
+            ${ad.address}<br>
+            Cena: ${ad.cost} zł, Metraż: ${ad.size} m²<br>
+            Godzina: ${ad.date}<br>
+            <a href="${ad.link}">${ad.link}</a>
+        </div>
+        <hr>
+    `).join('');
+
+    await transporter.sendMail({
+        from: 'OLX Scraper',
+        to: process.env.MAIL_RECEIVER,
+        subject: 'Nowe ogłoszenia OLX',
+        html
+    });
+}
 
 const request = async () => {
     try {
@@ -31,6 +64,16 @@ const request = async () => {
             if (addressAndDate.includes(' - ')) {
                 [address, date] = addressAndDate.split(' - ').map(s => s.trim());
                 date = date.replace(/Odświeżono( dnia)?/i, '').trim();
+
+                // Sprawdź czy data to "Dzisiaj o xx:xx"
+                const match = date.match(/Dzisiaj o (\d{2}):(\d{2})/i);
+                if (match) {
+                    // Zamień na format "HH:MM"
+                    date = `${match[1]}:${match[2]}`;
+                } else {
+                    // Jeśli nie jest z dzisiaj, pomiń ogłoszenie
+                    return;
+                }
             }
 
             const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, ''), 10) || null;
@@ -58,6 +101,7 @@ const request = async () => {
 
         if (newAdverts.length > 0) {
             console.log('Nowe ogłoszenia:', newAdverts);
+            await sendEmail(newAdverts); // wyślij maila z nowymi ogłoszeniami
         } else {
             console.log('Brak nowych ogłoszeń.');
         }

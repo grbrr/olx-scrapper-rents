@@ -19,6 +19,8 @@
   "homepage": "https://github.com/grbrr/olxRentScrapper#readme",
   "dependencies": {
     "cheerio": "^1.1.2",
+    "dotenv": "^17.2.0",
+    "nodemailer": "^7.0.5",
     "puppeteer": "^24.14.0"
   },
   "devDependencies": {
