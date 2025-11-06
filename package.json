@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon main.js"
+    "start": "node main.js"
   },
   "repository": {
     "type": "git",
@@ -18,10 +18,12 @@
   },
   "homepage": "https://github.com/grbrr/olxRentScrapper#readme",
   "dependencies": {
-    "axios": "^0.27.2",
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.0",
+    "nodemailer": "^7.0.5",
+    "puppeteer": "^24.14.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.19"
+    "nodemon": "^3.1.10"
   }
 }

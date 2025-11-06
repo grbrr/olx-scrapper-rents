@@ -1,128 +1,121 @@
-const axios = require('axios');
+require('dotenv').config();
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 const settings = require('./settings.js');
+const { sendEmail } = require('./sendEmail.js');
 
-const getProperPath = data => {
-    return data.replace(/:nth-child\([0-9]\)/g, '').replace(/:nth-child\([0-9][0-9]\)/g, ''); //some nth-child has one and some other has two numbers
-};
+let seenLinks = new Set();
 
-const deletePolishSigns = string => {
-    const chars = { 'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z' };
-    return string.toLowerCase().replace(/[ąćęłóśźż]/g, m => chars[m]);
-};
+let browser;
+let page;
 
-const fromNumToString = number => {
-    switch (number) {
-        case 1:
-            return 'one';
-        case 2:
-            return 'two';
-        case 3:
-            return 'three';
-        case 4:
-            return 'four';
-        default:
-            break;
-    };
-};
-
-const addPrefixFilter = (url, settingsProperty) => {
-    return url + deletePolishSigns(settingsProperty) + '/';
-};
-
-const addNumberFilter = (url, settingsProperty) => {
-    return url + `?search%5Bfilter_float_price:from%5D=${settingsProperty}`;
-};
-
-const addEnumFilter = (url, settingsProperty) => {
-    let checkboxIterator = 0;
-    settingsProperty.forEach(element => {
-        url += `?search%5Bfilter_enum_rooms%5D%5B${checkboxIterator}%5D=${fromNumToString(element)}`;
-        checkboxIterator++;
-    });
-    return url;
-};
-
-const buildURL = () => {
-    let url = 'https://www.olx.pl/d/nieruchomosci/mieszkania/';
-    if (settings.category) url = addPrefixFilter(url, settings.category);
-    if (settings.location) url = addPrefixFilter(url, settings.location);
-    if (settings.priceFrom) url = addNumberFilter(url, settings.priceFrom);
-    if (settings.priceTo) url = addNumberFilter(url, settings.priceTo);
-    if (settings.sizeFrom) url = addNumberFilter(url, settings.sizeFrom);
-    if (settings.sizeTo) url = addNumberFilter(url, settings.sizeTo);
-    if (settings.rooms) url = addEnumFilter(url, settings.rooms)
-    return url;
-    //https://www.olx.pl/d/nieruchomosci/mieszkania/wroclaw/?search%5Bfilter_enum_rooms%5D%5B0%5D=one&search%5Bfilter_enum_rooms%5D%5B1%5D=two&search%5Bfilter_enum_rooms%5D%5B2%5D=four
-};
-console.log(buildURL())
+/**
+ * Scrapes rental offers from a specified URL using Puppeteer and Cheerio, filters for today's ads,
+ * checks for new adverts not seen before, and sends an email notification if new adverts are found.
+ * Updates the set of seen links to avoid duplicate notifications.
+ *
+ * @async
+ * @function request
+ * @throws {Error} Logs any errors encountered during the scraping or processing.
+ */
 const request = async () => {
-    const url = buildURL();
     try {
-        const response = await axios.get(url);
-        const $ = cheerio.load(response.data);
+        browser = await puppeteer.launch({ headless: true });
+        page = await browser.newPage();
+        await page.goto(settings.url, { waitUntil: 'networkidle2' });
 
-        let titleArr = $(getProperPath(settings.titleSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-        //console.log(titleArr);
+        const content = await page.content();
 
-        let addressAndDateArr = $(getProperPath(settings.addressAndDateSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
+        const $ = cheerio.load(content);
 
-        let addressArr = [], dateArr = [];
-
-        for (let i = 0, j = 0, k = 0; i < addressAndDateArr.length; i++) {
-            if (i % 3 === 0) {
-                addressArr[j] = addressAndDateArr[i];
-                j++;
-            } else if (i % 3 === 2) {
-                dateArr[k] = addressAndDateArr[i];
-                k++;
-            };
-        };
-        //console.log(addressArr);
-        //console.log(dateArr);
-
-        let sizeArr = $(getProperPath(settings.sizeSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-
-        for (let i = 0; i < sizeArr.length; i++) {
-            sizeArr[i] = parseInt(sizeArr[i].replace(/ /g, ''));
-        };
-        //console.log(sizeArr);
-
-        let costArr = $(getProperPath(settings.costSelector)).contents().map(function () {
-            if (this.type === 'text') return $(this).text();
-        }).get();
-
-        for (let i = 0; i < costArr.length; i++) {
-            costArr[i] = parseInt(costArr[i].replace(/ /g, ''));
-        };
-        //console.log(costArr);
-
-        console.log(titleArr.length, addressArr.length, dateArr.length, sizeArr.length, costArr.length);
-
+        const offers = $(settings.offers);
         let resultArr = [];
-        for (let i = 0; i < titleArr.length; i++) {
-            resultArr[i] = {
-                number: i + 1,
-                title: titleArr[i],
-                address: addressArr[i],
-                cost: costArr[i],
-                size: sizeArr[i],
-                date: dateArr[i]
-            };
-        };
-        //console.log(resultArr);
-        return resultArr;
-    } catch (e) {
-        console.error(`Error in otodom: ${e.message}`);
-    };
-};
 
-console.log('starting script...');
+        offers.each((i, elem) => {
+            //mark if promoted
+            const isPromoted = $(elem).find(settings.promotedSelector).length > 0;
+
+            const title = $(elem).find(settings.titleSelector).text().trim() || null;
+
+            const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim() || null;
+            let address = '', date = '';
+            // address and date are combined, split them and clean up
+            if (addressAndDate.includes(' - ')) {
+                [address, date] = addressAndDate.split(' - ').map(s => s.trim());
+                date = date.replace(/Odświeżono( dnia)?/i, '').trim();
+
+                // Check if date is "Dzisiaj o xx:xx", if not, do not include it as we only want today's ads
+                const match = date.match(/Dzisiaj o (\d{2}):(\d{2})/i);
+                if (match) {
+                    date = `${match[1]}:${match[2]}`;
+                } else {
+                    return;
+                }
+            }
+
+            const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, ''), 10) || null;
+
+            const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, ''), 10) || null;
+
+            let link = $(elem).find(settings.hyperlinkSelector).attr('href');
+            if (link && link.startsWith('/')) {
+                const baseUrl = new URL(settings.url).origin;
+                link = baseUrl + link;
+            }
+
+            resultArr.push({
+                title,
+                address,
+                cost,
+                size,
+                date,
+                link,
+                isPromoted
+            });
+        });
+
+        // filter out ads that have already been seen
+        const newAdverts = resultArr.filter(ad => ad.link && !seenLinks.has(ad.link));
+
+        if (newAdverts.length > 0) {
+            //console.log('New adverts:', newAdverts);
+            await sendEmail(newAdverts); // send email with new ads
+        } else {
+            console.log('No new adverts found.');
+        }
+
+        // update seen links
+        resultArr.forEach(ad => {
+            if (ad.link) seenLinks.add(ad.link);
+        });
+
+        await browser.close();
+    } catch (e) {
+        console.error(`Error in OLX scraper: ${e.message}`);
+    }
+}
+
+/**
+ * Schedules the next execution of the request function after a random interval.
+ * Logs the time until the next run and recursively schedules itself after each execution.
+ *
+ * @async
+ * @function scheduleNextRequest
+ * @returns {Promise<void>} A promise that resolves when the scheduling is complete.
+ */
+async function scheduleNextRequest() {
+    const interval = settings.getRandomInterval();
+    console.log(`Next run in ${(interval / 1000).toFixed(1)} seconds.`);
+    setTimeout(async () => {
+        console.log('Restarting script...');
+        await request();
+        scheduleNextRequest();
+    }, interval);
+}
+
+console.log('Script will run at random intervals as determined by settings.getRandomInterval().');
+console.log('To stop the script, press Ctrl+C.');
+
 request();
+scheduleNextRequest();
