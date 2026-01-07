@@ -1,14 +1,14 @@
 # olxRentScrapper
 
-Repo for scrapping real estates ads. It scrapes ads from OLX, filters them by price and size, and sends email notifications for new ads.
+Repo for scrapping real estates ads. It scrapes ads from OLX, filters them by price and size, and sends email (gmail) notifications for new ads.
 
 ## Installation and launch
 
-Runs in node.js. Clone files to your machine and create `.env` file in root directory with your credentials.
+Runs in node.js. Clone files to your machine and create `.env` file in root directory with your credentials. Gmail mail app password is required - you can create it in your [Google Account settings](https://myaccount.google.com/apppasswords).
 
 ```env
 OLX_EMAIL=sender_email@gmail.com
-OLX_EMAIL_PASS=password
+OLX_EMAIL_PASS=your google app password
 MAIL_RECEIVER=receiver_email@gmail.com
 ```
 

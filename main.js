@@ -37,8 +37,11 @@ const request = async () => {
             const isPromoted = $(elem).find(settings.promotedSelector).length > 0;
 
             const title = $(elem).find(settings.titleSelector).text().trim() || null;
-
+            if (!title) console.log('No title found for an offer, check selector in settings.js.');
+            
             const addressAndDate = $(elem).find(settings.addressAndDateSelector).text().trim() || null;
+            if (!addressAndDate) console.log('No address and date found for an offer, check selector in settings.js.');
+
             let address = '', date = '';
             // address and date are combined, split them and clean up
             if (addressAndDate.includes(' - ')) {
@@ -53,12 +56,16 @@ const request = async () => {
                     return;
                 }
             }
-
+            const testSize = $(elem).find(settings.sizeSelector).text().trim();
             const size = parseInt($(elem).find(settings.sizeSelector).text().replace(/ /g, ''), 10) || null;
+            if (!size) console.log('No size found for an offer, check selector in settings.js.');
 
             const cost = parseInt($(elem).find(settings.costSelector).text().replace(/ /g, ''), 10) || null;
+            if (!cost) console.log('No cost found for an offer, check selector in settings.js.');
 
             let link = $(elem).find(settings.hyperlinkSelector).attr('href');
+            if (!link) console.log('No hyperlink found for an offer, check selector in settings.js.');
+
             if (link && link.startsWith('/')) {
                 const baseUrl = new URL(settings.url).origin;
                 link = baseUrl + link;
@@ -92,7 +99,7 @@ const request = async () => {
 
         await browser.close();
     } catch (e) {
-        console.error(`Error in OLX scraper: ${e.message}`);
+        console.error(`Error in OLX scraper: ${e}`);
     }
 }
 
